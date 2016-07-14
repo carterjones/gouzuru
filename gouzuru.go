@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/sys/windows"
+	"path/filepath"
 	"syscall"
 	"unsafe"
 )
@@ -103,7 +104,10 @@ func GetProcessNameFromPid(pid int32) (name string, err error) {
 		return "", err
 	}
 
-	return string(imageFileName[:ret]), nil
+	imageName := string(imageFileName[:ret])
+	_, procName := filepath.Split(imageName)
+
+	return procName, nil
 }
 
 func main() {
@@ -120,7 +124,7 @@ func main() {
 		if err != nil {
 			fmt.Printf("[-] error for PID: %v: %v\n", p, err)
 		} else {
-			fmt.Println("PID: ", p, "Name: ", name)
+			fmt.Println("PID:", p, "Name:", name)
 		}
 	}
 
