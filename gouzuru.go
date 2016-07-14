@@ -8,10 +8,18 @@ import (
 	"unsafe"
 )
 
+// The following definitions assume the OS is greater than or equal to Windows 7.
 var (
-	modkernel32 = windows.NewLazySystemDLL("kernel32.dll")
-	// The following assumes OS is greater than or equal to Windows 7.
-	enumProcesses = modkernel32.NewProc("K32EnumProcesses")
+	modkernel32             = windows.NewLazySystemDLL("kernel32.dll")
+	enumProcesses           = modkernel32.NewProc("K32EnumProcesses")
+	openProcess             = modkernel32.NewProc("OpenProcess")
+	getProcessImageFileName = modkernel32.NewProc("K32GetProcessImageFileNameA")
+)
+
+const (
+	MAX_PATH                          int = 256
+	PROCESS_QUERY_INFORMATION         int = 0x0400
+	PROCESS_QUERY_LIMITED_INFORMATION int = 0x1000
 )
 
 type Process struct {
@@ -52,18 +60,68 @@ func GetProcessIds() (procList []int32, err error) {
 	return processIds[:numProcs], nil
 }
 
+func OpenProcess(pid int32, accessLevel int32) (hwnd uintptr, err error) {
+	// HANDLE WINAPI OpenProcess(
+	//   _In_ DWORD dwDesiredAccess,
+	//   _In_ BOOL  bInheritHandle,
+	//   _In_ DWORD dwProcessId
+	// );
+	var numArgs uintptr = 3
+	ret, _, err := syscall.Syscall(openProcess.Addr(),
+		numArgs,
+		uintptr(accessLevel),
+		uintptr(0),
+		uintptr(pid))
+	if ret == 0 {
+		return uintptr(0), err
+	}
+
+	return ret, nil
+}
+
+func GetProcessNameFromPid(pid int32) (name string, err error) {
+	accessLevel := int32(PROCESS_QUERY_INFORMATION |
+		PROCESS_QUERY_LIMITED_INFORMATION)
+	hwnd, err := OpenProcess(pid, accessLevel)
+	if err != nil {
+		return "", err
+	}
+
+	// DWORD WINAPI GetProcessImageFileName(
+	//   _In_  HANDLE hProcess,
+	//   _Out_ LPTSTR lpImageFileName,
+	//   _In_  DWORD  nSize
+	// );
+	var numArgs uintptr = 3
+	var imageFileName [MAX_PATH]byte
+	ret, _, err := syscall.Syscall(getProcessImageFileName.Addr(),
+		numArgs,
+		hwnd,
+		uintptr(unsafe.Pointer(&imageFileName[0])),
+		uintptr(MAX_PATH))
+	if ret == 0 {
+		return "", err
+	}
+
+	return string(imageFileName[:ret]), nil
+}
+
 func main() {
 	// Get the process list.
 	pids, err := GetProcessIds()
 	if err != nil {
-		fmt.Println("[-] error:")
-		fmt.Println(err)
+		fmt.Println("[-] error:", err)
 		return
 	}
 
-	// List the process IDs.
+	// Correlate the process IDs with process names.
 	for _, p := range pids {
-		fmt.Println("PID: ", p)
+		name, err := GetProcessNameFromPid(p)
+		if err != nil {
+			fmt.Printf("[-] error for PID: %v: %v\n", p, err)
+		} else {
+			fmt.Println("PID: ", p, "Name: ", name)
+		}
 	}
 
 	// Open one of the processes.
