@@ -54,7 +54,7 @@ func main() {
 	targetProcName := os.Args[1]
 
 	// Get the process list.
-	pids, err := w32.GetProcessIds()
+	pids, err := w32.EnumProcesses()
 	if err != nil {
 		fmt.Println("[-] error:", err)
 		return

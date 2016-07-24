@@ -45,8 +45,7 @@ type MEMORY_BASIC_INFORMATION struct {
 	Type_             int32
 }
 
-// TODO: rename to EnumProcesses
-func GetProcessIds() (procList []int32, err error) {
+func EnumProcesses() (procList []int32, err error) {
 	// BOOL WINAPI EnumProcesses(
 	//   _Out_ DWORD *pProcessIds,
 	//   _In_  DWORD cb,
