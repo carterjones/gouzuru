@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/carterjones/gouzuru/w32"
 	"os"
+	"path/filepath"
 )
 
 type Process struct {
@@ -50,6 +51,12 @@ func (p Process) IdentifyRegions() (regions []w32.MEMORY_BASIC_INFORMATION, err 
 }
 
 func main() {
+	if len(os.Args) < 2 {
+		_, exeName := filepath.Split(os.Args[0])
+		fmt.Println("Usage:", exeName, "<process-name>")
+		return
+	}
+
 	// Set the target process to the first argument.
 	targetProcName := os.Args[1]
 
