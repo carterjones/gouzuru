@@ -47,18 +47,18 @@ type MEMORY_BASIC_INFORMATION struct {
 }
 
 type SYSTEM_INFO struct {
-	OemId int32
-	ProcessorArchitecture int16
-	reserved int16
-	PageSize int32
+	OemId                     int32
+	ProcessorArchitecture     int16
+	reserved                  int16
+	PageSize                  int32
 	MinimumApplicationAddress uintptr
 	MaximumApplicationAddress uintptr
-	ActiveProcessorMask uintptr
-	NumberOfProcessors int32
-	ProcessorType int32
-	AllocationGranularity int32
-	ProcessorLevel int16
-	ProcessorRevision int16
+	ActiveProcessorMask       uintptr
+	NumberOfProcessors        int32
+	ProcessorType             int32
+	AllocationGranularity     int32
+	ProcessorLevel            int16
+	ProcessorRevision         int16
 }
 
 func EnumProcesses() (procList []int32, err error) {

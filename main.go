@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-func handleError(err error) (bool) {
+func handleError(err error) bool {
 	if err != nil {
 		fmt.Println("[-] error:", err)
 		return true
@@ -55,8 +55,8 @@ func main() {
 	}
 
 	proc := gouzuru.Process{
-		Name: targetProcName,
-		Pid: targetPid,
+		Name:   targetProcName,
+		Pid:    targetPid,
 		Handle: hwnd,
 	}
 	fmt.Printf("Successfully opened %v. PID: %v. Handle: %v.\n",
@@ -68,7 +68,7 @@ func main() {
 		return
 	}
 
-	for _, r := range(regions) {
+	for _, r := range regions {
 		fmt.Println("region: %v, size: %v", r.BaseAddress, r.RegionSize)
 	}
 
