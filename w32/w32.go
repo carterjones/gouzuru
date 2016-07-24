@@ -137,6 +137,10 @@ func GetProcessImageFileName(hwnd uintptr) (procName string, err error) {
 }
 
 func GetSystemInfo() (si SYSTEM_INFO, err error) {
+	// void WINAPI GetSystemInfo(
+	//   _Out_ LPSYSTEM_INFO lpSystemInfo
+	// );
+	// This function does not return a value.
 	var numArgs uintptr = 1
 	_, _, err = syscall.Syscall(getSystemInfo.Addr(),
 		numArgs,
