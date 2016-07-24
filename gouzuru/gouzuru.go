@@ -4,12 +4,6 @@ import (
 	"github.com/carterjones/gouzuru/w32"
 )
 
-type Process struct {
-	Name   string
-	Pid    int32 // DWORD
-	Handle uintptr
-}
-
 func GetProcessNameFromPid(pid int32) (name string, err error) {
 	accessLevel := int32(w32.PROCESS_QUERY_INFORMATION |
 		w32.PROCESS_QUERY_LIMITED_INFORMATION)
@@ -29,6 +23,12 @@ func GetProcessNameFromPid(pid int32) (name string, err error) {
 func GetMaxAddress() (address int32, err error) {
 	// TODO: Use SYSTEM_INFO to get the max application address
 	return 0, nil
+}
+
+type Process struct {
+	Name   string
+	Pid    int32 // DWORD
+	Handle uintptr
 }
 
 func (p Process) IdentifyRegions() (regions []w32.MEMORY_BASIC_INFORMATION, err error) {
