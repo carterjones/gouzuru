@@ -51,13 +51,21 @@ func main() {
 	proc := gouzuru.Process{
 		Name: targetProcName,
 		Pid: targetPid,
-		Handle: hwnd
+		Handle: hwnd,
 	}
 	fmt.Printf("Successfully opened %v. PID: %v. Handle: %v.\n",
 		proc.Name, proc.Pid, proc.Handle)
 
 	// Get information about the page ranges of the process.
-	proc.IdentifyRegions()
+	regions, err := proc.IdentifyRegions()
+	if err != nil {
+		fmt.Println("[-] error:", err)
+		return
+	}
+
+	for _, r := range(regions) {
+		fmt.Println("region: %v, size: %v", r.BaseAddress, r.RegionSize)
+	}
 
 	// Read some memory.
 	// TODO: data, err := ReadProcessMemory(hwnd, address, 1)

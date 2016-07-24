@@ -14,6 +14,7 @@ var (
 	enumProcesses           = modkernel32.NewProc("K32EnumProcesses")
 	openProcess             = modkernel32.NewProc("OpenProcess")
 	getProcessImageFileName = modkernel32.NewProc("K32GetProcessImageFileNameA")
+	getSystemInfo           = modkernel32.NewProc("GetSystemInfo")
 )
 
 const (
@@ -43,6 +44,21 @@ type MEMORY_BASIC_INFORMATION struct {
 	State             int32
 	Protect           int32
 	Type_             int32
+}
+
+type SYSTEM_INFO struct {
+	OemId int32
+	ProcessorArchitecture int16
+	reserved int16
+	PageSize int32
+	MinimumApplicationAddress uintptr
+	MaximumApplicationAddress uintptr
+	ActiveProcessorMask uintptr
+	NumberOfProcessors int32
+	ProcessorType int32
+	AllocationGranularity int32
+	ProcessorLevel int16
+	ProcessorRevision int16
 }
 
 func EnumProcesses() (procList []int32, err error) {
@@ -118,4 +134,20 @@ func GetProcessImageFileName(hwnd uintptr) (procName string, err error) {
 	_, procName = filepath.Split(imageName)
 
 	return procName, nil
+}
+
+func GetSystemInfo() (si SYSTEM_INFO, err error) {
+	var numArgs uintptr = 1
+	_, _, err = syscall.Syscall(getSystemInfo.Addr(),
+		numArgs,
+		uintptr(unsafe.Pointer(&si)),
+		0,
+		0)
+	if err != nil {
+		if err.Error() != "The operation completed successfully." {
+			return SYSTEM_INFO{}, err
+		}
+	}
+
+	return si, nil
 }

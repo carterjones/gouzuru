@@ -20,9 +20,15 @@ func GetProcessNameFromPid(pid int32) (name string, err error) {
 	return procName, nil
 }
 
-func GetMaxAddress() (address int32, err error) {
-	// TODO: Use SYSTEM_INFO to get the max application address
-	return 0, nil
+func GetMinMaxAddress() (min, max int32, err error) {
+	si, err := w32.GetSystemInfo()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return int32(si.MinimumApplicationAddress),
+		int32(si.MaximumApplicationAddress),
+		nil
 }
 
 type Process struct {
@@ -32,8 +38,7 @@ type Process struct {
 }
 
 func (p Process) IdentifyRegions() (regions []w32.MEMORY_BASIC_INFORMATION, err error) {
-	minAddress := int32(0)
-	maxAddress, err := GetMaxAddress()
+	minAddress, maxAddress, err := GetMinMaxAddress()
 	if err != nil {
 		return nil, err
 	}
