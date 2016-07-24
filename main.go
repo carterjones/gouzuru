@@ -8,6 +8,14 @@ import (
 	"path/filepath"
 )
 
+func handleError(err error) (bool) {
+	if err != nil {
+		fmt.Println("[-] error:", err)
+		return true
+	}
+	return false
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		_, exeName := filepath.Split(os.Args[0])
@@ -20,8 +28,7 @@ func main() {
 
 	// Get the process list.
 	pids, err := w32.EnumProcesses()
-	if err != nil {
-		fmt.Println("[-] error:", err)
+	if handleError(err) {
 		return
 	}
 
@@ -43,8 +50,7 @@ func main() {
 
 	// Open the target process.
 	hwnd, err := w32.OpenProcess(targetPid, int32(w32.PROCESS_ALL_ACCESS))
-	if err != nil {
-		fmt.Println("[-] error:", err)
+	if handleError(err) {
 		return
 	}
 
@@ -58,8 +64,7 @@ func main() {
 
 	// Get information about the page ranges of the process.
 	regions, err := proc.IdentifyRegions()
-	if err != nil {
-		fmt.Println("[-] error:", err)
+	if handleError(err) {
 		return
 	}
 
