@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/sys/windows"
+	"os"
 	"path/filepath"
 	"syscall"
 	"unsafe"
@@ -18,9 +19,22 @@ var (
 )
 
 const (
-	MAX_PATH                          int = 256
+	MAX_PATH int = 256
+	// Process rights.
+	PROCESS_CREATE_PROCESS            int = 0x0080
+	PROCESS_CREATE_THREAD             int = 0x0002
+	PROCESS_DUP_HANDLE                int = 0x0040
 	PROCESS_QUERY_INFORMATION         int = 0x0400
 	PROCESS_QUERY_LIMITED_INFORMATION int = 0x1000
+	PROCESS_SET_INFORMATION           int = 0x0200
+	PROCESS_SET_QUOTA                 int = 0x0100
+	PROCESS_SUSPEND_RESUME            int = 0x0800
+	PROCESS_TERMINATE                 int = 0x0001
+	PROCESS_VM_OPERATION              int = 0x0008
+	PROCESS_VM_READ                   int = 0x0010
+	PROCESS_VM_WRITE                  int = 0x0020
+	SYNCHRONIZE                       int = 0x00100000
+	PROCESS_ALL_ACCESS                int = PROCESS_CREATE_PROCESS | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE | PROCESS_QUERY_INFORMATION | PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SET_INFORMATION | PROCESS_SET_QUOTA | PROCESS_SUSPEND_RESUME | PROCESS_TERMINATE | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | SYNCHRONIZE
 )
 
 type Process struct {
@@ -111,6 +125,9 @@ func GetProcessNameFromPid(pid int32) (name string, err error) {
 }
 
 func main() {
+	// Set the target process to the first argument.
+	targetProcName := os.Args[1]
+
 	// Get the process list.
 	pids, err := GetProcessIds()
 	if err != nil {
@@ -118,23 +135,31 @@ func main() {
 		return
 	}
 
-	// Correlate the process IDs with process names.
+	// Find the target PID.
+	targetPid := int32(0)
 	for _, p := range pids {
 		name, err := GetProcessNameFromPid(p)
 		if err != nil {
 			fmt.Printf("[-] error for PID: %v: %v\n", p, err)
-		} else {
-			fmt.Println("PID:", p, "Name:", name)
+		} else if name == targetProcName {
+			targetPid = p
 		}
 	}
+	if targetPid == 0 {
+		fmt.Printf("Unable to open %v. You might need more permissions or the "+
+			"target process might not exist.\n", targetProcName)
+		return
+	}
 
-	// Open one of the processes.
-	// TODO: hwnd, err := OpenProcess(w32.PROCESS_ALL_ACCESS, false, pid)
-	// HANDLE WINAPI OpenProcess(
-	//   _In_ DWORD dwDesiredAccess,
-	//   _In_ BOOL  bInheritHandle,
-	//   _In_ DWORD dwProcessId
-	// );
+	// Open the target process.
+	hwnd, err := OpenProcess(targetPid, int32(PROCESS_ALL_ACCESS))
+	if err != nil {
+		fmt.Println("[-] error:", err)
+		return
+	}
+
+	fmt.Printf("Successfully opened %v. PID: %v. Handle: %v.\n",
+		targetProcName, targetPid, hwnd)
 
 	// Read some memory.
 	// TODO: data, err := ReadProcessMemory(hwnd, address, 1)
