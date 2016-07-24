@@ -38,8 +38,19 @@ const (
 )
 
 type Process struct {
-	name string
-	pid  int // DWORD
+	name   string
+	pid    int32 // DWORD
+	handle uintptr
+}
+
+type MEMORY_BASIC_INFORMATION struct {
+	BaseAddress       uintptr
+	AllocationBase    uintptr
+	AllocationProtect int32
+	RegionSize        int32
+	State             int32
+	Protect           int32
+	Type_             int32
 }
 
 func GetProcessIds() (procList []int32, err error) {
@@ -124,6 +135,27 @@ func GetProcessNameFromPid(pid int32) (name string, err error) {
 	return procName, nil
 }
 
+func GetMaxAddress() (address int32, err error) {
+	// TODO: Use SYSTEM_INFO to get the max application address
+	return 0, nil
+}
+
+func (p Process) IdentifyRegions() (regions []MEMORY_BASIC_INFORMATION, err error) {
+	minAddress := int32(0)
+	maxAddress, err := GetMaxAddress()
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: use VirtualQueryEx to get info about all the regions in the process
+	for addr := minAddress; addr < maxAddress; {
+		// TODO: make this increase by the current region's size
+		addr += 1
+	}
+
+	return nil, nil
+}
+
 func main() {
 	// Set the target process to the first argument.
 	targetProcName := os.Args[1]
@@ -158,8 +190,12 @@ func main() {
 		return
 	}
 
+	proc := Process{name: targetProcName, pid: targetPid, handle: hwnd}
 	fmt.Printf("Successfully opened %v. PID: %v. Handle: %v.\n",
-		targetProcName, targetPid, hwnd)
+		proc.name, proc.pid, proc.handle)
+
+	// Get information about the page ranges of the process.
+	proc.IdentifyRegions()
 
 	// Read some memory.
 	// TODO: data, err := ReadProcessMemory(hwnd, address, 1)
