@@ -1,11 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/carterjones/gouzuru/gouzuru"
 	"github.com/carterjones/gouzuru/w32"
-	"os"
-	"path/filepath"
 )
 
 func handleError(err error) bool {
@@ -17,14 +16,10 @@ func handleError(err error) bool {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		_, exeName := filepath.Split(os.Args[0])
-		fmt.Println("Usage:", exeName, "<process-name>")
-		return
-	}
-
-	// Set the target process to the first argument.
-	targetProcName := os.Args[1]
+	var targetProcName = flag.String("p",
+		"<target-process.exe>",
+		"name of the target process (including .exe)")
+	flag.Parse()
 
 	// Get the process list.
 	pids, err := w32.EnumProcesses()
@@ -38,13 +33,13 @@ func main() {
 		name, err := gouzuru.GetProcessNameFromPid(p)
 		if err != nil {
 			fmt.Printf("[-] error for PID: %v: %v\n", p, err)
-		} else if name == targetProcName {
+		} else if name == *targetProcName {
 			targetPid = p
 		}
 	}
 	if targetPid == 0 {
 		fmt.Printf("Unable to open %v. You might need more permissions or the "+
-			"target process might not exist.\n", targetProcName)
+			"target process might not exist.\n", *targetProcName)
 		return
 	}
 
@@ -56,7 +51,7 @@ func main() {
 
 	// Make a process object.
 	proc := gouzuru.Process{
-		Name:   targetProcName,
+		Name:   *targetProcName,
 		Pid:    targetPid,
 		Handle: hwnd,
 	}
