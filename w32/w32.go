@@ -16,6 +16,7 @@ var (
 	getProcessImageFileName = modkernel32.NewProc("K32GetProcessImageFileNameA")
 	getSystemInfo           = modkernel32.NewProc("GetSystemInfo")
 	virtualQueryEx          = modkernel32.NewProc("VirtualQueryEx")
+	readProcessMemory       = modkernel32.NewProc("ReadProcessMemory")
 )
 
 const (
@@ -35,6 +36,24 @@ const (
 	PROCESS_VM_WRITE                  int = 0x0020
 	SYNCHRONIZE                       int = 0x00100000
 	PROCESS_ALL_ACCESS                int = PROCESS_CREATE_PROCESS | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE | PROCESS_QUERY_INFORMATION | PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SET_INFORMATION | PROCESS_SET_QUOTA | PROCESS_SUSPEND_RESUME | PROCESS_TERMINATE | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | SYNCHRONIZE
+	// Memory states.
+	MEM_COMMIT  int = 0x1000
+	MEM_FREE    int = 0x10000
+	MEM_RESERVE int = 0x2000
+	// Page protection contstants.
+	PAGE_EXECUTE           int = 0x10
+	PAGE_EXECUTE_READ      int = 0x20
+	PAGE_EXECUTE_READWRITE int = 0x40
+	PAGE_EXECUTE_WRITECOPY int = 0x80
+	PAGE_NOACCESS          int = 0x01
+	PAGE_READONLY          int = 0x02
+	PAGE_READWRITE         int = 0x04
+	PAGE_WRITECOPY         int = 0x08
+	PAGE_TARGETS_INVALID   int = 0x40000000
+	PAGE_TARGETS_NO_UPDATE int = 0x40000000
+	PAGE_GUARD             int = 0x100
+	PAGE_NOCACHE           int = 0x200
+	PAGE_WRITECOMBINE      int = 0x400
 )
 
 type MEMORY_BASIC_INFORMATION struct {
@@ -47,6 +66,27 @@ type MEMORY_BASIC_INFORMATION struct {
 	Protect           int32
 	Type              int32
 	__alignment2      int32
+}
+
+func (mbi MEMORY_BASIC_INFORMATION) IsReadable() bool {
+	// Perform some type conversions.
+	state := int(mbi.State)
+	protect := int(mbi.Protect)
+
+	// Verify that the memory is used by the target process.
+	stateOk := state == MEM_COMMIT
+
+	// Verify that protection flags don't prohibit access.
+	protectOk := (protect&PAGE_NOACCESS) == 0 && (protect&PAGE_GUARD) == 0
+
+	// Verify that at least one read flag is enabled.
+	protectOk = protectOk && ((protect&PAGE_EXECUTE_READ) != 0 ||
+		(protect&PAGE_EXECUTE_READWRITE) != 0 ||
+		(protect&PAGE_READONLY) != 0 ||
+		(protect&PAGE_READWRITE) != 0)
+
+	// Return the results.
+	return stateOk && protectOk
 }
 
 type SYSTEM_INFO struct {
@@ -186,4 +226,30 @@ func VirtualQueryEx(hwnd, baseAddress uintptr) (mbi MEMORY_BASIC_INFORMATION, er
 	}
 
 	return mbi, nil
+}
+
+func ReadProcessMemory(hwnd, addr, size uintptr) (data []byte, err error) {
+	// BOOL WINAPI ReadProcessMemory(
+	//   _In_  HANDLE  hProcess,
+	//   _In_  LPCVOID lpBaseAddress,
+	//   _Out_ LPVOID  lpBuffer,
+	//   _In_  SIZE_T  nSize,
+	//   _Out_ SIZE_T  *lpNumberOfBytesRead
+	// );
+	var numArgs uintptr = 5
+	data = make([]byte, size)
+	var nbr uintptr = 0
+	ret, _, err := syscall.Syscall6(readProcessMemory.Addr(),
+		numArgs,
+		hwnd,
+		addr,
+		uintptr(unsafe.Pointer(&data[0])),
+		size,
+		uintptr(unsafe.Pointer(&nbr)),
+		0)
+	if ret == 0 {
+		return nil, err
+	}
+
+	return data, nil
 }

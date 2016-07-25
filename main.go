@@ -64,17 +64,17 @@ func main() {
 		return
 	}
 
+	// Iterate over each region.
 	for _, r := range regions {
-		fmt.Printf("base: %x, size: %x\n", r.BaseAddress, r.RegionSize)
-	}
+		// Read the entire region into a buffer.
+		if r.IsReadable() {
+			data, err := w32.ReadProcessMemory(proc.Handle, r.BaseAddress, r.RegionSize)
+			if handleError(err) {
+				return
+			}
 
-	// Read some memory.
-	// TODO: data, err := ReadProcessMemory(hwnd, address, 1)
-	// BOOL WINAPI ReadProcessMemory(
-	//   _In_  HANDLE  hProcess,
-	//   _In_  LPCVOID lpBaseAddress,
-	//   _Out_ LPVOID  lpBuffer,
-	//   _In_  SIZE_T  nSize,
-	//   _Out_ SIZE_T  *lpNumberOfBytesRead
-	// );
+			// Print the first two bytes.
+			fmt.Printf("first 2 bytes: %c%c\n", data[0], data[1])
+		}
+	}
 }
