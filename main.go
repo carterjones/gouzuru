@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/carterjones/gouzuru/gouzuru"
 	"github.com/carterjones/gouzuru/w32"
+	"strings"
 )
 
 func handleError(err error) bool {
@@ -32,6 +33,16 @@ func main() {
 	for _, p := range pids {
 		name, err := gouzuru.GetProcessNameFromPid(p)
 		if err != nil {
+			// Ignore the SYSTEM process.
+			if p == 0 {
+				continue
+			}
+
+			// Ignore access denied errors.
+			if strings.Contains(err.Error(), "Access is denied.") {
+				continue
+			}
+
 			fmt.Printf("[-] error for PID: %v: %v\n", p, err)
 		} else if name == *targetProcName {
 			targetPid = p
