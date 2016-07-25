@@ -33,7 +33,7 @@ func GetMinMaxAddress() (min, max int32, err error) {
 
 type Process struct {
 	Name   string
-	Pid    int32 // DWORD
+	Pid    int32
 	Handle uintptr
 }
 

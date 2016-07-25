@@ -54,6 +54,7 @@ func main() {
 		return
 	}
 
+	// Make a process object.
 	proc := gouzuru.Process{
 		Name:   targetProcName,
 		Pid:    targetPid,
@@ -67,6 +68,7 @@ func main() {
 	if handleError(err) {
 		return
 	}
+
 
 	for _, r := range regions {
 		fmt.Println("region: %v, size: %v", r.BaseAddress, r.RegionSize)
