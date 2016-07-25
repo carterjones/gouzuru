@@ -20,14 +20,14 @@ func GetProcessNameFromPid(pid int32) (name string, err error) {
 	return procName, nil
 }
 
-func GetMinMaxAddress() (min, max int32, err error) {
+func GetMinMaxAddress() (min, max uintptr, err error) {
 	si, err := w32.GetSystemInfo()
 	if err != nil {
 		return 0, 0, err
 	}
 
-	return int32(si.MinimumApplicationAddress),
-		int32(si.MaximumApplicationAddress),
+	return si.MinimumApplicationAddress,
+		si.MaximumApplicationAddress,
 		nil
 }
 
@@ -43,11 +43,19 @@ func (p Process) IdentifyRegions() (regions []w32.MEMORY_BASIC_INFORMATION, err 
 		return nil, err
 	}
 
-	// TODO: use VirtualQueryEx to get info about all the regions in the process
+	// Use VirtualQueryEx to get info about all the regions in the process.
 	for addr := minAddress; addr < maxAddress; {
-		// TODO: make this increase by the current region's size
-		addr += 1
+		ret, err := w32.VirtualQueryEx(p.Handle, addr)
+		if err != nil {
+			return regions, err
+		}
+
+		// Save the region.
+		regions = append(regions, ret)
+
+		// Move to the next region.
+		addr += uintptr(ret.RegionSize)
 	}
 
-	return nil, nil
+	return regions, nil
 }

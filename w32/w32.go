@@ -41,10 +41,12 @@ type MEMORY_BASIC_INFORMATION struct {
 	BaseAddress       uintptr
 	AllocationBase    uintptr
 	AllocationProtect int32
-	RegionSize        int32
+	__alignment1      int32
+	RegionSize        uintptr
 	State             int32
 	Protect           int32
-	Type_             int32
+	Type              int32
+	__alignment2      int32
 }
 
 type SYSTEM_INFO struct {
@@ -61,7 +63,7 @@ type SYSTEM_INFO struct {
 	ProcessorRevision         int16
 }
 
-func (si SYSTEM_INFO) OemId() (int32) {
+func (si SYSTEM_INFO) OemId() int32 {
 	oemId := int32(si.ProcessorArchitecture) << 16
 	oemId += int32(si.reserved)
 	return oemId
@@ -170,15 +172,13 @@ func VirtualQueryEx(hwnd, baseAddress uintptr) (mbi MEMORY_BASIC_INFORMATION, er
 	//   _In_     SIZE_T                    dwLength
 	// );
 	// The return value is the actual number of bytes returned in the information buffer.
-	// If the function fails, the return value is zero.
 	var numArgs uintptr = 4
-	const sizeofMbi uintptr = 28
 	ret, _, err := syscall.Syscall6(virtualQueryEx.Addr(),
 		numArgs,
 		hwnd,
 		baseAddress,
 		uintptr(unsafe.Pointer(&mbi)),
-		sizeofMbi, // dwLength: The size of the buffer pointed to by the lpBuffer parameter, in bytes.
+		unsafe.Sizeof(mbi),
 		0,
 		0)
 	if ret == 0 {

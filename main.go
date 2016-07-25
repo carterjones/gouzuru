@@ -69,9 +69,8 @@ func main() {
 		return
 	}
 
-
 	for _, r := range regions {
-		fmt.Println("region: %v, size: %v", r.BaseAddress, r.RegionSize)
+		fmt.Printf("base: %x, size: %x\n", r.BaseAddress, r.RegionSize)
 	}
 
 	// Read some memory.
