@@ -48,7 +48,6 @@ type MEMORY_BASIC_INFORMATION struct {
 }
 
 type SYSTEM_INFO struct {
-	OemId                     int32
 	ProcessorArchitecture     int16
 	reserved                  int16
 	PageSize                  int32
@@ -60,6 +59,12 @@ type SYSTEM_INFO struct {
 	AllocationGranularity     int32
 	ProcessorLevel            int16
 	ProcessorRevision         int16
+}
+
+func (si SYSTEM_INFO) OemId() (int32) {
+	oemId := int32(si.ProcessorArchitecture) << 16
+	oemId += int32(si.reserved)
+	return oemId
 }
 
 func EnumProcesses() (procList []int32, err error) {
