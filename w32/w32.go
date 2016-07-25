@@ -15,6 +15,7 @@ var (
 	openProcess             = modkernel32.NewProc("OpenProcess")
 	getProcessImageFileName = modkernel32.NewProc("K32GetProcessImageFileNameA")
 	getSystemInfo           = modkernel32.NewProc("GetSystemInfo")
+	virtualQueryEx          = modkernel32.NewProc("VirtualQueryEx")
 )
 
 const (
@@ -154,4 +155,30 @@ func GetSystemInfo() (si SYSTEM_INFO, err error) {
 	}
 
 	return si, nil
+}
+
+func VirtualQueryEx(hwnd, baseAddress uintptr) (mbi MEMORY_BASIC_INFORMATION, err error) {
+	// SIZE_T WINAPI VirtualQueryEx(
+	//   _In_     HANDLE                    hProcess,
+	//   _In_opt_ LPCVOID                   lpAddress,
+	//   _Out_    PMEMORY_BASIC_INFORMATION lpBuffer,
+	//   _In_     SIZE_T                    dwLength
+	// );
+	// The return value is the actual number of bytes returned in the information buffer.
+	// If the function fails, the return value is zero.
+	var numArgs uintptr = 4
+	const sizeofMbi uintptr = 28
+	ret, _, err := syscall.Syscall6(virtualQueryEx.Addr(),
+		numArgs,
+		hwnd,
+		baseAddress,
+		uintptr(unsafe.Pointer(&mbi)),
+		sizeofMbi, // dwLength: The size of the buffer pointed to by the lpBuffer parameter, in bytes.
+		0,
+		0)
+	if ret == 0 {
+		return MEMORY_BASIC_INFORMATION{}, err
+	}
+
+	return mbi, nil
 }
